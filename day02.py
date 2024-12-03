@@ -1,6 +1,6 @@
 input_1: list[str] = []
 
-with open('./inputs/input0201.txt', 'r') as file:
+with open('./inputs/day02/1.txt', 'r') as file:
     contents = file.read()
     for i in contents.split('\n'):
         if (len(i) > 0):

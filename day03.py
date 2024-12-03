@@ -1,7 +1,7 @@
 numbers: list[str] = [str(i) for i in range(10)]
 program: str = ''
 
-with open('./inputs/input0301.txt', 'r') as file:
+with open('./inputs/day03/1.txt', 'r') as file:
     program = file.read()
 
 def parse_parens(input: str) -> int | None:
