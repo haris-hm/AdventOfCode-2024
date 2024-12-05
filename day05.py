@@ -1,3 +1,5 @@
+from functools import cmp_to_key
+
 class Rule:
     def __init__(self, before: set[int]=set(), after: set[int]=set()):
         self.before = before
@@ -9,7 +11,9 @@ class Rule:
 rules: dict[int, Rule] = {}
 updates: list[list[int]] = []
 
-with open('./inputs/day05/0.txt', 'r') as file:
+rules_p2: dict[int, list[int]] = {}
+
+with open('./inputs/day05/1.txt', 'r') as file:
     contents = file.read()
     inputs = contents.split('\n')
     sep_found: bool = False
@@ -25,6 +29,7 @@ with open('./inputs/day05/0.txt', 'r') as file:
 
         left: int = int(i[0:2])
         right: int = int(i[3:5])
+        print(left, right)
         
         if left in rules.keys():
             rules[left].after.add(right)
@@ -35,6 +40,11 @@ with open('./inputs/day05/0.txt', 'r') as file:
             rules[right].before.add(left)
         else:
             rules[right] = Rule(before={left})
+
+        if left in rules_p2.keys():
+            rules_p2[left].append(right)
+        else:
+            rules_p2[left] = [right]
 
 def follows_rules(update: list[int], rules: dict[int, Rule], incorrect_updates: list[list[int]] = []) -> bool:
     for i, page in enumerate(update):
@@ -102,5 +112,24 @@ mid_sum, incorrect_updates = check_updates(updates, rules)
 print(f'Middle Page Sum: {mid_sum}')
 print(f'Number of incorrect updates: {len(incorrect_updates)}')
 
-fix_updates(incorrect_updates, rules)
+# fix_updates(incorrect_updates, rules)
+
+def enforce_rule(a, b):
+    if b in rules_p2[a]:
+        return -1
+    elif a in rules_p2[b]:
+        return 1
+    else:
+        return 0
+
+def fix_updates(updates: list[list[int]]) -> int:
+    mid_sum: int = 0
+    for update in updates:
+        sorted_updates = sorted(update, key=cmp_to_key(enforce_rule))
+        mid_sum += sorted_updates[len(sorted_updates)//2]
+
+    return mid_sum
+
+print(f'Fixed updates: {fix_updates(incorrect_updates)}')
+        
 
