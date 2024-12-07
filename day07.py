@@ -7,14 +7,20 @@ class Equation:
     def __repr__(self) -> str:
         return f'(Result: {self.result}, Variables: {self.variables})'
     
+    def __concat(self, left: int, right: int) -> int:
+        left_str: str = str(left)
+        right_str: str = str(right)
+        return int(left_str+right_str)
+
     def __promising(self, i: int, weight: int) -> bool:
         if i == len(self.variables)-1 and weight == self.result:
             return True
         elif i+1 == len(self.variables):
             return False
         else:
-            # is_total_feasible: bool = weight+total >= self.result
-            are_branches_possible: bool = weight + self.variables[i+1] <= self.result or weight * self.variables[i+1] <= self.result 
+            are_branches_possible: bool = weight + self.variables[i+1] <= self.result or \
+                weight * self.variables[i+1] <= self.result or \
+                self.__concat(weight, self.variables[i+1])
             return are_branches_possible 
 
     def __validate(self, i: int, weight: int) -> bool:
@@ -30,6 +36,11 @@ class Equation:
                 add: bool = self.__validate(i+1, weight+self.variables[i+1])
 
                 if add:
+                    return True
+                
+                concat: bool = self.__validate(i+1, self.__concat(weight, self.variables[i+1]))
+
+                if concat:
                     return True
         else:
             return False
