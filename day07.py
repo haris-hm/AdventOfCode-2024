@@ -29,17 +29,14 @@ class Equation:
                 return True
             else:
                 mult: bool = self.__validate(i+1, weight*self.variables[i+1])
-                
                 if mult:
                     return True
                 
                 add: bool = self.__validate(i+1, weight+self.variables[i+1])
-
                 if add:
                     return True
                 
                 concat: bool = self.__validate(i+1, self.__concat(weight, self.variables[i+1]))
-
                 if concat:
                     return True
         else:
@@ -47,6 +44,15 @@ class Equation:
     
     def validate(self) -> bool:
         return self.__validate(0, self.variables[0])
+    
+def validate_equations(equations: list[Equation]) -> int:
+    valid_sum: int = 0
+
+    for eq in equations:
+        if eq.validate():
+            valid_sum += eq.result
+    
+    return valid_sum
 
 equations: list[Equation] = []
 
@@ -57,14 +63,4 @@ with open('./inputs/day07/1.txt', 'r') as file:
         equations.append(Equation(int(line_split[0]), [int(i) for i in line_split[1].split()]))
 
 print(equations)
-
-def validate_equations(equations: list[Equation]) -> int:
-    valid_sum: int = 0
-
-    for eq in equations:
-        if eq.validate():
-            valid_sum += eq.result
-    
-    return valid_sum
-
 print(f'Valid Sum: {validate_equations(equations)}')
