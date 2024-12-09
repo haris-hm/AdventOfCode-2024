@@ -6,7 +6,9 @@ class DiskBlock():
         self.size = size
 
     def __lt__(self, other) -> bool:
-        if other.starting_idx > self.starting_idx:
+        if other.starting_idx > self.starting_idx and other.starting_idx != self.starting_idx:
+            return True
+        elif self.starting_idx > other.starting_idx and other.starting_idx == self.starting_idx:
             return True
         else:
             False
@@ -19,8 +21,8 @@ class ExpandedDiskMap():
         self.disk_map: list[int | None] = []
         self.free_space_queue: list[int] = []
         self.free_block_queue: list[DiskBlock] = []
-        self.free_blocks_available: set[int] = set()
         self.file_queue: deque[DiskBlock] = deque()
+        self.full_file_queue: deque[DiskBlock] = deque()
         self.curr_id: int = 0
         self.free_amount: int = 0
 
@@ -33,11 +35,13 @@ class ExpandedDiskMap():
 
     def add_file(self, size: int) -> None:
         starting_idx: int = len(self.disk_map) + size - 1
+        left_starting_idx: int = len(self.disk_map)
 
         for _ in range(size):
             self.disk_map.append(self.curr_id)
 
         self.file_queue.append(DiskBlock(starting_idx, size))
+        self.full_file_queue.append(DiskBlock(left_starting_idx, size))
         self.curr_id += 1
 
     def add_free_space(self, size: int) -> None:
@@ -49,7 +53,6 @@ class ExpandedDiskMap():
             self.disk_map.append(None)
 
         self.free_block_queue.append(DiskBlock(starting_idx, size))
-        self.free_blocks_available.add(size)
 
     def compact_files(self, output: bool=False) -> None:
         i: int = 1
@@ -95,37 +98,46 @@ class ExpandedDiskMap():
         print(self) if output else None
 
         while i < self.free_amount:
-            curr_file: DiskBlock = self.file_queue.pop()
-            file_idx: int = curr_file.starting_idx
-            curr_file_id: int = self.disk_map[file_idx]
+            if len(self.full_file_queue) == 0:
+                break
 
-            # print(f'{curr_file = }', f'{curr_file_id = }')
+            curr_file = self.full_file_queue.pop()
+            file_idx = curr_file.starting_idx
+            curr_file_id = self.disk_map[file_idx]
 
-            free_block_idx: int = 0
             free_block: DiskBlock = None
+            free_block_idx: int = 0
 
             for k, block in enumerate(self.free_block_queue):
                 if block.size >= curr_file.size:
                     free_block = self.free_block_queue.pop(k)
-                    free_block_idx = free_block.starting_idx
+                    free_block_idx = block.starting_idx
                     break
-
+            
             if free_block == None:
                 continue
 
-            self.free_block_queue.append(DiskBlock(file_idx, curr_file.size))
-            if free_block_idx + curr_file.size < free_block_idx + free_block.size:
-                self.free_block_queue.insert(0, DiskBlock(free_block_idx + curr_file.size, free_block.size-curr_file.size))
-            self.free_block_queue.sort()
-            
+            print(f'\n\n{file_idx = } {free_block_idx = }') if output else None
+            print(self) if output else None
+
+            if free_block_idx > file_idx:
+                continue
+                
             for k in range(curr_file.size):
-                # print(self)
-                self.disk_map[free_block_idx + k] = curr_file_id
-                self.disk_map[file_idx + k - 2] = None
+                self.disk_map[free_block_idx] = curr_file_id
+                self.disk_map[file_idx] = None
+                free_block_idx += 1
+                file_idx += 1
 
             print(self) if output else None
-            # print(self.free_block_queue)
 
+            self.free_block_queue.append(DiskBlock(file_idx - curr_file.size, curr_file.size))
+            if (curr_file.size < free_block.size and free_block.size-curr_file.size > 0):
+                new_starting_idx: int = (free_block.starting_idx + curr_file.size)
+                new_size: int = free_block.size-curr_file.size
+                self.free_block_queue.insert(0, DiskBlock(new_starting_idx, new_size))
+
+            self.free_block_queue.sort()
             i += 1
     
     def checksum(self) -> int:
@@ -159,19 +171,19 @@ class ExpandedDiskMap():
 def main() -> None:
     disk_map: str = ''
 
-    with open('./inputs/day09/0.txt', 'r') as file:
+    with open('./inputs/day09/1.txt', 'r') as file:
         disk_map = file.read()
 
     expanded_disk_map: ExpandedDiskMap = ExpandedDiskMap(disk_map)
     print(f'Expanded Disk Map: {expanded_disk_map}')
-    expanded_disk_map.defrag_compact(output=True)
+    expanded_disk_map.defrag_compact(output=False)
     expanded_disk_map.save_output('./inputs/day09/1out.txt')
     print(f'Compacted Disk Map: {expanded_disk_map}')
     print(f'Checksum: {expanded_disk_map.checksum()}')
 
     expanded_disk_map: ExpandedDiskMap = ExpandedDiskMap('12345')
     print(f'Expanded Disk Map: {expanded_disk_map}')
-    expanded_disk_map.compact_files()
+    expanded_disk_map.defrag_compact()
     # expanded_disk_map.save_output('./inputs/day09/1out.txt')
     print(f'Compacted Disk Map: {expanded_disk_map}')
     print(f'Checksum: {expanded_disk_map.checksum()}')
