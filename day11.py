@@ -1,35 +1,3 @@
-def split_stone(stone: int) -> list[int]:
-    if stone == 0:
-        return [1]
-    elif len(str(stone)) % 2 == 0:
-        left_stone: str = str(stone)[:len(str(stone))//2]
-        right_stone: str = str(stone)[len(str(stone))//2:]
-        return [int(left_stone), int(right_stone)]
-    else:
-        return [stone*2024]
-    
-def dynamic_splitting(stones: list[int], memo: dict[list[int], tuple[list[int], int]]) -> tuple[list[int], int]:
-    stones_amount: int = len(stones)
-
-    if stones_amount == 1:
-        base_stone: tuple[list[int], int] = split_stone(stones[0])
-        return base_stone, len(base_stone)
-    elif tuple(stones) in memo:
-        # print('hit', stones_amount)
-        return memo[tuple(stones)]
-
-    left: list[int] = stones[:stones_amount//2]
-    right: list[int] = stones[stones_amount//2:]
-
-    left_stones, left_val = dynamic_splitting(left, memo) 
-    memo[tuple(left)] = (left_stones, left_val)
-    right_stones, right_val = dynamic_splitting(right, memo)
-    memo[tuple(right)] = (right_stones, right_val)
-
-    left_stones.extend(right_stones)
-
-    return left_stones, (left_val + right_val)
-
 def dynamic_stones(stone: int, blinks: int, memo: dict[tuple[int], int]) -> int:
     stone_str: str = str(stone)
     stone_str_length: int = len(stone_str)
@@ -95,6 +63,7 @@ def main() -> None:
         stones = [int(i) for i in contents.split()]
 
     print(f'Number of stones at 25 blinks: {calculate_stones(stones, 25)}')
+    print(f'Number of stones at 75 blinks: {calculate_stones(stones, 75)}')
 
 if __name__ == '__main__':
     main()
