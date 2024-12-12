@@ -1,17 +1,78 @@
 class Region():
-    def __init__(self, region_id: str, area: int=0, perimeter: int=0) -> None:
+    def __init__(self, region_id: str, area: int=0, perimeter: int=0, sides: int=0) -> None:
         self.region_id = region_id
         self.area = area
         self.perimeter = perimeter
+        self.sides = sides
+
+        self.row_sides_visited: set[tuple[int]] = []
+        self.column_sides_visited: set[tuple[int]] = []
+
+    def add_horizontal_side(self, coord: tuple[int]) -> None:
+        self.row_sides_visited.append(coord)
+
+    def add_vertical_side(self, coord: tuple[int]) -> None:
+        self.column_sides_visited.append(coord)
+
+    def calculate_sides(self) -> int:
+        sorted_row_sides: list[tuple[int]] = sorted(list(self.row_sides_visited), key = lambda x: (x[0], x[1]))
+        sorted_column_sides: list[tuple[int]] = sorted(list(self.column_sides_visited), key = lambda x: (x[1], x[0]))
+
+        row_sides: int = 0
+        column_sides: int = 0
+
+        curr_row_val: int = None
+        i: int = 0
+
+        while i < len(sorted_row_sides) - 1:
+            same_side: bool = True
+            marked_side: bool = False
+            curr_row_val = sorted_row_sides[i][0] 
+            curr_col_val = sorted_row_sides[i][1] 
+            
+            while same_side and i < len(sorted_row_sides) - 1:
+                if sorted_row_sides[i+1][0] == curr_row_val and sorted_row_sides[i+1][1] == curr_col_val+1:
+                    if not marked_side:
+                        row_sides += 1
+                        marked_side = True
+                else:
+                    same_side = False
+                
+                i+= 1
+
+        curr_row_val: int = None
+        i = 0
+
+        while i < len(sorted_column_sides) - 1:
+            same_side: bool = True
+            marked_side: bool = False
+            curr_row_val = sorted_column_sides[i][0] 
+            curr_col_val = sorted_column_sides[i][1] 
+            
+            while same_side and i < len(sorted_row_sides) - 1:
+                if sorted_column_sides[i+1][1] == curr_col_val and sorted_column_sides[i+1][0] == curr_row_val+1:
+                    if not marked_side:
+                        row_sides += 1
+                        marked_side = True
+                else:
+                    same_side = False
+                
+                i+= 1
+
+
+        return row_sides + column_sides
 
     def get_price(self) -> int:
         return self.area*self.perimeter
+    
+    def get_bulk_price(self) -> int:
+        return self.area*self.sides
     
     def copy(self):
         return Region(self.region_id, self.area, self.perimeter)
     
     def __repr__(self) -> str:
-        return f'[ID: {self.region_id}, Area: {self.area}, Perimeter: {self.perimeter}]'
+        return f'[ID: {self.region_id}, Area: {self.area}, Perimeter: {self.perimeter}, Sides: {self.calculate_sides()}]'
     
 class Map():
     def __init__(self, plot_map: list[list[str]]) -> None:
@@ -61,6 +122,7 @@ class Map():
         left: tuple[int] = (y, x-1)
         right: tuple[int] = (y, x+1)
 
+        # Area calculation
         if (self.promising(curr_char, up)):
             self.identify_region_bounds(up, region)
 
@@ -73,22 +135,26 @@ class Map():
         if (self.promising(curr_char, right)):
             self.identify_region_bounds(right, region)
 
-
+        # Perimeter and Sides Calculation
         if (self.different_id(curr_char, up)):
             region.perimeter += 1
+            region.add_horizontal_side(up)
 
         if (self.different_id(curr_char, down)):
             region.perimeter += 1
+            region.add_horizontal_side(down)
 
         if (self.different_id(curr_char, left)):
             region.perimeter += 1
+            region.add_vertical_side(left)
 
         if (self.different_id(curr_char, right)):
             region.perimeter += 1
+            region.add_vertical_side(right)
 
         return region
 
-    def segment_regions(self) -> int:
+    def segment_regions(self):
         for y, line in enumerate(self.plot_map):
             for x, char in enumerate(line):
                 curr_idx: tuple[int] = (y, x)
@@ -98,24 +164,25 @@ class Map():
 
                     curr_region = self.identify_region_bounds(curr_idx, curr_region)
                     self.regions.append(curr_region)
-        
+        return self
+    
+    def get_full_price(self, bulk: bool=False, output: bool=False) -> int:
         price_sum: int = 0
 
         for region in self.regions:
-            print(region)
-            price_sum += region.get_price()
+            print(region) if output else None
+            price_sum += region.get_bulk_price() if bulk else region.get_price()
 
         return price_sum
 
-
 def main() -> None:
     plot_map: Map = None
-    with open('./inputs/day12/3.txt', 'r') as file:
+    with open('./inputs/day12/2.txt', 'r') as file:
         contents = file.read().split('\n')
         plot_map = Map([[char for char in line] for line in contents])
     
-    price: int = plot_map.segment_regions()
-    print(price)
+    plot_map.segment_regions()
+    print(f'Normal price: {plot_map.get_full_price()}\nBulk price: {plot_map.get_full_price(bulk=True, output=True)}')
 
 if __name__ == '__main__':
     main()
