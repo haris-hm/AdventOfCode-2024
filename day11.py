@@ -51,8 +51,8 @@ def calculate_stones(stones: list[int], blinks: int) -> int:
     sum: int = 0
 
     for stone in stones:
-        sum += dynamic_stones(stone, blinks, memo)        
-    
+        sum += dynamic_stones(stone, blinks, memo)       
+            
     return sum
 
 def main() -> None:
