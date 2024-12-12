@@ -5,74 +5,56 @@ class Region():
         self.perimeter = perimeter
         self.sides = sides
 
-        self.row_sides_visited: set[tuple[int]] = []
-        self.column_sides_visited: set[tuple[int]] = []
+        self.sides_above: list[tuple[int]] = []
+        self.sides_on_right: list[tuple[int]] = []
+        self.sides_below: list[tuple[int]] = []
+        self.sides_on_left: list[tuple[int]] = []
 
-    def add_horizontal_side(self, coord: tuple[int]) -> None:
-        self.row_sides_visited.append(coord)
+    def calculate_sub_sides(self, sides: list[tuple[int]], axis_key: int, val_key: int) -> int:
+        same_side: bool = False
+        side_count: int = 0
 
-    def add_vertical_side(self, coord: tuple[int]) -> None:
-        self.column_sides_visited.append(coord)
+        for i, val in enumerate(sides):
+            if not same_side:
+                side_count += 1
+
+            if i == len(sides) - 1:
+                break
+
+            if sides[i+1][axis_key] == val[axis_key] and \
+                (sides[i+1][val_key] == val[val_key] + 1 or sides[i+1][val_key] == val[val_key]):
+                same_side = True
+            else:
+                same_side = False
+
+        return side_count
 
     def calculate_sides(self) -> int:
-        sorted_row_sides: list[tuple[int]] = sorted(list(self.row_sides_visited), key = lambda x: (x[0], x[1]))
-        sorted_column_sides: list[tuple[int]] = sorted(list(self.column_sides_visited), key = lambda x: (x[1], x[0]))
+        sorted_up_sides: list[tuple[int]] = sorted(list(self.sides_above), key = lambda x: (x[0], x[1]))
+        sorted_right_sides: list[tuple[int]] = sorted(list(self.sides_on_right), key = lambda x: (x[1], x[0]))
+        sorted_down_sides: list[tuple[int]] = sorted(list(self.sides_below), key = lambda x: (x[0], x[1]))
+        sorted_left_sides: list[tuple[int]] = sorted(list(self.sides_on_left), key = lambda x: (x[1], x[0]))
 
-        row_sides: int = 0
-        column_sides: int = 0
+        # print(f'{sorted_up_sides = }\n{sorted_right_sides = }\n{sorted_down_sides = }\n{sorted_left_sides = }\n')
 
-        curr_row_val: int = None
-        i: int = 0
+        up_side_count: int = self.calculate_sub_sides(sorted_up_sides, 0, 1)
+        right_side_count: int = self.calculate_sub_sides(sorted_right_sides, 1, 0)
+        down_side_count: int = self.calculate_sub_sides(sorted_down_sides, 0, 1)
+        left_side_count: int = self.calculate_sub_sides(sorted_left_sides, 1, 0)
 
-        while i < len(sorted_row_sides) - 1:
-            same_side: bool = True
-            marked_side: bool = False
-            curr_row_val = sorted_row_sides[i][0] 
-            curr_col_val = sorted_row_sides[i][1] 
-            
-            while same_side and i < len(sorted_row_sides) - 1:
-                if sorted_row_sides[i+1][0] == curr_row_val and sorted_row_sides[i+1][1] == curr_col_val+1:
-                    if not marked_side:
-                        row_sides += 1
-                        marked_side = True
-                else:
-                    same_side = False
-                
-                i+= 1
-
-        curr_row_val: int = None
-        i = 0
-
-        while i < len(sorted_column_sides) - 1:
-            same_side: bool = True
-            marked_side: bool = False
-            curr_row_val = sorted_column_sides[i][0] 
-            curr_col_val = sorted_column_sides[i][1] 
-            
-            while same_side and i < len(sorted_row_sides) - 1:
-                if sorted_column_sides[i+1][1] == curr_col_val and sorted_column_sides[i+1][0] == curr_row_val+1:
-                    if not marked_side:
-                        row_sides += 1
-                        marked_side = True
-                else:
-                    same_side = False
-                
-                i+= 1
-
-
-        return row_sides + column_sides
+        return (up_side_count + right_side_count + down_side_count + left_side_count)
 
     def get_price(self) -> int:
         return self.area*self.perimeter
     
     def get_bulk_price(self) -> int:
-        return self.area*self.sides
+        return self.area*self.calculate_sides()
     
     def copy(self):
         return Region(self.region_id, self.area, self.perimeter)
     
     def __repr__(self) -> str:
-        return f'[ID: {self.region_id}, Area: {self.area}, Perimeter: {self.perimeter}, Sides: {self.calculate_sides()}]'
+        return f'[ID: {self.region_id}, Area: {self.area}, Perimeter: {self.perimeter}, Sides: {12}]'
     
 class Map():
     def __init__(self, plot_map: list[list[str]]) -> None:
@@ -138,19 +120,19 @@ class Map():
         # Perimeter and Sides Calculation
         if (self.different_id(curr_char, up)):
             region.perimeter += 1
-            region.add_horizontal_side(up)
+            region.sides_above.append(up)
 
         if (self.different_id(curr_char, down)):
             region.perimeter += 1
-            region.add_horizontal_side(down)
+            region.sides_below.append(down)
 
         if (self.different_id(curr_char, left)):
             region.perimeter += 1
-            region.add_vertical_side(left)
+            region.sides_on_left.append(left)
 
         if (self.different_id(curr_char, right)):
             region.perimeter += 1
-            region.add_vertical_side(right)
+            region.sides_on_right.append(right)
 
         return region
 
@@ -177,7 +159,7 @@ class Map():
 
 def main() -> None:
     plot_map: Map = None
-    with open('./inputs/day12/2.txt', 'r') as file:
+    with open('./inputs/day12/3.txt', 'r') as file:
         contents = file.read().split('\n')
         plot_map = Map([[char for char in line] for line in contents])
     
