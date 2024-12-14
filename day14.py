@@ -35,11 +35,17 @@ class Map():
         self.robots: list[Robot] = []
         self.robot_amount: int = 0
 
+        self.current_tick: int = 0
+
+        self.lowest_safety_factor: int = -1
+        self.potential_tree_map: list[list[str]] = []
+
     def add_robot(self, pos_x: int, pos_y: int, vel_x: int, vel_y: int) -> None:
         self.robots.append(Robot(pos_x, pos_y, vel_x, vel_y))
         self.robot_amount += 1
         
     def tick(self) -> None:
+        self.current_tick += 1
         for robot in self.robots:
             robot.tick(self.width, self.height)
 
@@ -67,6 +73,11 @@ class Map():
 
         return robot_count
     
+    def save_map(self) -> None:
+        with open(f'./outputs/day14/{self.current_tick}.txt', 'w') as file:
+            file.write(str(self))
+            file.close()
+    
     def calculate_safety_factor(self) -> int:
         map_list: list[list[str]] = self.map_to_list()
         top_half: list[list[str]] = map_list[self.height//2+1:]
@@ -77,72 +88,17 @@ class Map():
         bottom_left_quad: list[list[str]] = [i[self.width//2+1:] for i in bottom_half]
         bottom_right_quad: list[list[str]] = [i[:self.width//2] for i in bottom_half]
 
-        print(self.calc_quad_safety(bottom_right_quad))
-
         score: int = self.calc_quad_safety(top_left_quad)      \
                      *self.calc_quad_safety(top_right_quad)    \
                      *self.calc_quad_safety(bottom_left_quad)  \
                      *self.calc_quad_safety(bottom_right_quad)
         
+        if (self.lowest_safety_factor == -1 or self.lowest_safety_factor > score):
+            self.lowest_safety_factor = score
+            self.potential_tree_map = map_list
+            self.save_map()
+        
         return score
-    
-    def promising(self, curr_char: str, 
-                  coord: tuple[int], 
-                  map_list: list[list[str]], 
-                  visited_nodes: set[tuple[int]]) -> bool:
-        y: int = coord[0]
-        x: int = coord[1]
-
-        within_bounds: bool = 0 <= y < len(map_list) and 0 <= x < len(map_list[0])
-        not_visited: bool = (y, x) not in visited_nodes
-        same_id: bool = False
-
-        if (within_bounds):
-            same_id = map_list[y][x] == curr_char
-
-        if (same_id and not_visited and within_bounds):
-            return True
-        else:
-            return False
-    
-    def identify_cluster(self, starting_idx: tuple[int], 
-                         threshold: int, 
-                         visited_nodes: set[tuple[int]], 
-                         map_list: list[list[str]],
-                         count: int) -> bool:
-        y: int = starting_idx[0]
-        x: int = starting_idx[1]
-
-        curr_char: str = map_list[y][x]
-
-        visited_nodes.add(starting_idx)
-
-        up: tuple[int] = (y-1, x)
-        down: tuple[int] = (y+1, x)
-        left: tuple[int] = (y, x-1)
-        right: tuple[int] = (y, x+1)
-
-        if count == threshold:
-            return True
-        
-        up_cluster: bool = False
-        down_cluster: bool = False
-        left_cluster: bool = False
-        right_cluster: bool = False
-        
-        if (self.promising(curr_char, up, map_list, visited_nodes)):
-            up_cluster = self.identify_cluster(up, threshold, visited_nodes, map_list, count)
-        
-        if (self.promising(curr_char, down, map_list, visited_nodes)):
-            down_cluster = self.identify_cluster(down, threshold, visited_nodes, map_list, count)
-
-        if (self.promising(curr_char, left, map_list, visited_nodes)):
-            left_cluster = self.identify_cluster(left, threshold, visited_nodes, map_list, count)
-
-        if (self.promising(curr_char, right, map_list, visited_nodes)):
-            right_cluster = self.identify_cluster(right, threshold, visited_nodes, map_list, count)
-
-        return up_cluster or down_cluster or left_cluster or right_cluster
       
     def clustering(self, threshold: int) -> None:
         map_list: list[list[str]] = self.map_to_list()
@@ -159,13 +115,6 @@ class Map():
 
                 if (is_cluster_present):
                     break
-
-        print(is_cluster_present)
-
-        if (is_cluster_present):
-            with open('./outputs/day14.txt', 'w') as file:
-                file.write(self)
-                file.close()
         
     def __repr__(self) -> str:
         combined_strs: list[str] = []
@@ -178,15 +127,16 @@ class Map():
 
         return repr_str
     
-def part_one(bathroom_map: Map) -> None:
-    print(bathroom_map)
-    for i in range(100):
+def tick_map(bathroom_map: Map, tick_amount: int) -> None:
+    print(f'Starting Map:\n{bathroom_map}')
+    for i in range(tick_amount):
         bathroom_map.tick()
-        if i % 10000 == 0:
-            print(i)
+        bathroom_map.calculate_safety_factor()
+        if i % 1000 == 0:
+            print(f'Iteration: {i}')
     
-    print(bathroom_map)
-    print(bathroom_map.calculate_safety_factor())
+    print(f'Final Map:\n{bathroom_map}')
+    print(f'Safety Factor: {bathroom_map.calculate_safety_factor()}')
 
 def main() -> None:
     bathroom_map: Map = Map(101, 103)
@@ -197,17 +147,19 @@ def main() -> None:
             init_info: list[int] =  [int(i) for i in re.findall('(-*\d+)', line)]
             bathroom_map.add_robot(init_info[0], init_info[1], init_info[2], init_info[3])
     
-    # part_one(bathroom_map)
+    tick_map(bathroom_map, 100)
+
+    tick_map(bathroom_map, 9900)
 
     # Part 2
-    curr_second: int = 0
+    # curr_second: int = 0
 
-    while True:
-        bathroom_map.tick()
-        print(f'{bathroom_map}\nSeconds elapsed: {curr_second}\n\n')
-        input('Continue?:')
-        bathroom_map.clustering(50)
-        curr_second += 1
+    # while True:
+    #     bathroom_map.tick()
+    #     print(f'{bathroom_map}\nSeconds elapsed: {curr_second}\n\n')
+    #     input('Continue?:')
+    #     bathroom_map.clustering(50)
+    #     curr_second += 1
 
 if __name__ == '__main__':
     main()
