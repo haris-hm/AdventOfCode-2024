@@ -1,77 +1,53 @@
 import re
-import numpy as np
 
+class SystemMatrix():
+    def __init__(self, eq_1: tuple[int], eq_2: tuple[int]) -> None:
+        self.a = eq_1[0]
+        self.b = eq_1[1]
+        self.c = eq_2[0]
+        self.d = eq_2[1]
+        self.e = eq_1[2]
+        self.f = eq_2[2]
+
+    def __repr__(self) -> str:
+        return f'[{self.a} {self.b}] [A] _ [{self.e}]\n[{self.c} {self.d}] [B] ̅  [{self.f}]'
+
+    def determinant(self, a: int, b: int, c: int, d: int) -> int:
+        return (a*d)-(b*c)
+    
+    def solve_cramer(self) -> tuple[int]:
+        x_numerator_det: int = self.determinant(self.e, self.b, self.f, self.d)
+        y_numerator_det: int = self.determinant(self.a, self.e, self.c, self.f)
+        
+        denominator_det: int = self.determinant(self.a, self.b, self.c, self.d)
+
+        x: int = 0
+        y: int = 0
+
+        x = x_numerator_det // denominator_det
+        y = y_numerator_det // denominator_det
+
+        return (x, y)
+    
 class Machine():
     a_cost: int = 3
     b_cost: int = 1
 
     def __init__(self, eq_a: tuple[int], eq_b: tuple[int]) -> None:
-        self.eq_a = eq_a
-        self.eq_b = eq_b
+        self.system: SystemMatrix = SystemMatrix(eq_a, eq_b)
 
-    def solve_100(self) -> int:
-        solution: tuple[int] = ()
+    def solve(self) -> int:
+        x, y = self.system.solve_cramer()
+        print(self.system)
+        print(f'{x=}, {y=}')
 
-        for i in range(101):
-            for k in range(101):
-                xs_equal: bool = self.eq_a[0]*i + self.eq_a[1]*k == self.eq_a[2]
-                ys_equal: bool = self.eq_b[0]*i + self.eq_b[1]*k == self.eq_b[2]
-
-                if xs_equal and ys_equal:
-                    solution = (i, k)
-                    break
-
-        if len(solution) == 0:
-            return 0
+        valid: bool = self.system.a*x+self.system.b*y == self.system.e and \
+            self.system.c*x+self.system.d*y == self.system.f
+        
+        if valid:
+            return x*self.a_cost + y*self.b_cost
         else:
-            cost: int = solution[0]*self.a_cost + solution[1]*self.b_cost
-            return cost
-        
-    def solve_general(self) -> int:
-        def solve_x(y) -> float:
-            coeff_1: int = self.eq_b[0]
-            coeff_2: int = self.eq_b[1]
-            potential_x: int = (self.eq_a[2]-self.eq_a[1]*y)/self.eq_a[0]
-
-            validation: float = coeff_1*potential_x+coeff_2*y
-
-            # print(coeff_1, coeff_2, potential_x)
-
-            return potential_x, validation
-        
-        y_val: int = -1
-        x_val: int = 0
-        while True:
-            y_val += 1
-            x_val, validation = solve_x(y_val)
-            
-            if validation  == self.eq_b[2]:
-                break
-            elif validation > self.eq_b[2]:
-                x_val = 0
-                y_val = 0
-                break
-
-        xs_equal: bool = self.eq_a[0]*x_val + self.eq_a[1]*y_val == self.eq_a[2]
-        ys_equal: bool = self.eq_b[0]*x_val + self.eq_b[1]*y_val == self.eq_b[2]
-        cost: int = 0
-
-        if xs_equal and ys_equal:
-            cost: int = x_val*self.a_cost + y_val*self.b_cost
-        
-        return cost
-    
-    def solve_np(self) -> int:
-        equations = np.array([[self.eq_a[0], self.eq_a[1]], [self.eq_b[0], self.eq_b[1]]])
-        solutions = np.array([self.eq_a[2], self.eq_b[2]])
-        solved = np.linalg.solve(equations, solutions)
-
-        print(solved[0], solved[1])
-        cost = solved[0]*self.a_cost + solved[1]*self.b_cost
-
-        if cost.is_integer():
-            return cost
-        return 0
+            return 0
 
     def __repr__(self) -> str:
         return f'[{self.eq_a = }, {self.eq_b = }]'
@@ -99,10 +75,10 @@ def main() -> None:
                                               (eq_1[1], eq_2[1], solution[1]+10000000000000)))
 
     for machine in machines:
-        total_cost += machine.solve_100()
+        total_cost += machine.solve()
 
-    for i, machine in enumerate(expensive_machines):
-        total_expensive_cost += machine.solve_np()
+    for machine in expensive_machines:
+        total_expensive_cost += machine.solve()
 
     print(f'Total cost: {total_cost}')
     print(f'Total expensive cost: {total_expensive_cost}')
