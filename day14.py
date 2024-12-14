@@ -148,18 +148,7 @@ def main() -> None:
             bathroom_map.add_robot(init_info[0], init_info[1], init_info[2], init_info[3])
     
     tick_map(bathroom_map, 100)
-
     tick_map(bathroom_map, 9900)
-
-    # Part 2
-    # curr_second: int = 0
-
-    # while True:
-    #     bathroom_map.tick()
-    #     print(f'{bathroom_map}\nSeconds elapsed: {curr_second}\n\n')
-    #     input('Continue?:')
-    #     bathroom_map.clustering(50)
-    #     curr_second += 1
 
 if __name__ == '__main__':
     main()
