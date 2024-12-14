@@ -11,6 +11,10 @@ class SystemMatrix():
 
     def __repr__(self) -> str:
         return f'[{self.a} {self.b}] [A] _ [{self.e}]\n[{self.c} {self.d}] [B] ̅  [{self.f}]'
+    
+    def solution_check(self, x, y) -> bool:
+        return self.system.a*x+self.system.b*y == self.system.e and \
+            self.system.c*x+self.system.d*y == self.system.f
 
     def determinant(self, a: int, b: int, c: int, d: int) -> int:
         return (a*d)-(b*c)
@@ -36,13 +40,16 @@ class Machine():
     def __init__(self, eq_a: tuple[int], eq_b: tuple[int]) -> None:
         self.system: SystemMatrix = SystemMatrix(eq_a, eq_b)
 
-    def solve(self) -> int:
-        x, y = self.system.solve_cramer()
-        print(self.system)
-        print(f'{x=}, {y=}')
+    def solve(self, output: bool=False) -> int:
+        x: int = 0
+        y: int = 0
 
-        valid: bool = self.system.a*x+self.system.b*y == self.system.e and \
-            self.system.c*x+self.system.d*y == self.system.f
+        x, y = self.system.solve_cramer()
+
+        print(self.system) if output else None
+        print(f'{x=}, {y=}') if output else None
+
+        valid: bool = self.system.solution_check()
         
         if valid:
             return x*self.a_cost + y*self.b_cost
