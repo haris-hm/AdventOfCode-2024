@@ -9,18 +9,14 @@ class Map():
         for movement in self.movements:
             self.move_robot(movement)
 
-    def run_sim_manual(self) -> None:
-        curr_movement_idx: int = 0
-        
+    def run_sim_manual(self) -> None:        
         while True:
             movement: str = input('Which way should the robot move? (E to exit): ')
             if (movement == 'E'):
                 break
             self.move_robot(movement)
-            print(f'\n\n\nMoved: {self.movements[curr_movement_idx]}')
+            print(f'\n\n\nMoved: {movement}')
             print(self)
-
-            curr_movement_idx += 1
 
     def translate_movement(self, movement: str) -> tuple[int]:
         match movement:
@@ -117,9 +113,91 @@ class Map():
         grid_lines: list[str] = [''.join(line) for line in self.grid]
         grid: str = '\n'.join(grid_lines)
         return grid
+    
+class WideMap(Map):
+    def __init__(self, *args, **kwargs):
+        super(WideMap, self).__init__(*args, **kwargs)
+        self.widen_map()
+
+    def widen_map(self) -> None:
+        new_grid: list[list[str]] = []
+
+        for line in self.grid:
+            new_line: list[str] = []
+            for char in line:
+                new_char: list[str] = []
+                match char:
+                    case '#':
+                        new_char = ['#', '#']
+                    case 'O':
+                        new_char = ['[', ']']
+                    case '.':
+                        new_char = ['.', '.']
+                    case '@':
+                        new_char = ['@', '.']
+
+                new_line.extend(new_char)
+            new_grid.append(new_line)
+
+        self.grid = new_grid
+
+        for y, line in enumerate(self.grid):
+            for x, char in enumerate(line):
+                if char == '@':
+                    self.robot_x = x
+                    self.robot_y = y
+
+    def move_x(self, dx: int) -> None:
+        new_location: int = self.robot_x + dx
+
+        if (self.grid[self.robot_y][new_location] == '#'):
+            return
+        elif (self.grid[self.robot_y][new_location] == '.'):
+            self.grid[self.robot_y][new_location] = '@'
+            self.grid[self.robot_y][self.robot_x] = '.'
+            self.robot_x += dx
+        else:
+            i: int = 1
+
+            while True:
+                crate_new_location: int = new_location + dx + i*2*dx
+                print(self.grid[self.robot_y][crate_new_location])
+                if (self.grid[self.robot_y][crate_new_location - dx] == '.'):
+                    curr_bracket = ']' if dx > 0 else '['
+                    step: int = -1 if dx > 0 else 1
+
+                    for k in range(crate_new_location-dx, new_location, step):
+                        self.grid[self.robot_y][k] = curr_bracket
+                        if (curr_bracket == '['):
+                            curr_bracket = ']'
+                        else:
+                            curr_bracket = '['
+
+                    self.grid[self.robot_y][new_location] = '@'
+                    self.grid[self.robot_y][self.robot_x] = '.'
+                    self.robot_x += dx
+                    return
+                elif (self.grid[self.robot_y][crate_new_location - dx] == '#'):
+                    return
+                
+                i += 1
+    
+    def move_y(self, dy: int) -> None:
+        return super().move_y(dy)
+
+    def calc_gps(self) -> int:
+        gps_sum: int = 0
+
+        for y, line in enumerate(self.grid):
+            for x, char in enumerate(line):
+                if (char == '['):
+                    gps_sum += y*100 + x
+
+        return gps_sum
 
 def main() -> None:
     warehouse: Map = None
+    wide_warehouse: WideMap = None
 
     with open('./inputs/day15/2.txt', 'r') as file:
         contents: list[str] = file.read().split('\n\n')
@@ -133,13 +211,16 @@ def main() -> None:
                     robot_location = (y, x)
 
         warehouse = Map(grid, robot_location, movements)
+        wide_warehouse = WideMap(grid, robot_location, movements)
 
-    print(warehouse)
-    print(warehouse.crate_count())
-    warehouse.run_simulation()
-    print(warehouse)
-    print(warehouse.crate_count())
-    print(f'GPS Sum: {warehouse.calc_gps()}')
+    # Part 1
+    # print(warehouse)
+    # warehouse.run_simulation()
+    # print(warehouse)
+    # print(f'GPS Sum: {warehouse.calc_gps()}')
+
+    print(f'\n\n{wide_warehouse}')
+    wide_warehouse.run_sim_manual()
 
 if __name__ == '__main__':
     main()
