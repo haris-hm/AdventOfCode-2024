@@ -43,7 +43,9 @@ class Map():
             self.grid[self.robot_y][self.robot_x] = '.'
             self.robot_x += dx
         else:
-            for i in range(1, len(self.grid[self.robot_y]) - self.robot_x):
+            i: int = 1
+
+            while True:
                 crate_new_location: int = new_location + dx*i
 
                 if (self.grid[self.robot_y][crate_new_location] == '.'):
@@ -55,6 +57,8 @@ class Map():
                     return
                 elif (self.grid[self.robot_y][crate_new_location] == '#'):
                     return
+                
+                i += 1
         
     def move_y(self, dy: int) -> None:
         new_location: int = self.robot_y + dy
@@ -66,7 +70,8 @@ class Map():
             self.grid[self.robot_y][self.robot_x] = '.'
             self.robot_y += dy
         else:
-            for i in range(1, len(self.grid) - self.robot_y):
+            i: int = 1
+            while True:
                 crate_new_location: int = new_location + dy*i
 
                 if (self.grid[crate_new_location][self.robot_x] == '.'):
@@ -78,6 +83,8 @@ class Map():
                     return
                 elif (self.grid[crate_new_location][self.robot_x] == '#'):
                     return
+                
+                i += 1
 
     def move_robot(self, movement: str) -> None:
         movement_coord: tuple[int] = self.translate_movement(movement)
@@ -129,7 +136,7 @@ def main() -> None:
 
     print(warehouse)
     print(warehouse.crate_count())
-    warehouse.run_sim_manual()
+    warehouse.run_simulation()
     print(warehouse)
     print(warehouse.crate_count())
     print(f'GPS Sum: {warehouse.calc_gps()}')
