@@ -147,6 +147,40 @@ class WideMap(Map):
                     self.robot_x = x
                     self.robot_y = y
 
+    def search_box_tree(self, dy: int, starting_node: tuple[int]) -> list[tuple[int]]:
+        open_nodes: list[tuple[int]] = [starting_node]
+        closed_nodes: list[str] = []
+
+        while len(open_nodes) > 0:
+            curr_node: tuple[int] = open_nodes.pop(0)
+            closed_nodes.append(curr_node)
+            y: int = curr_node[0]
+            x_1: int = curr_node[1]
+            x_2: int = curr_node[2]
+
+            if (self.grid[y+dy][x_1] == '#' or self.grid[y+dy][x_2] == '#'):
+                return []
+
+            right_box: tuple[int] = (y+dy, x_2, x_2+1)
+            left_box: tuple[int] = (y+dy, x_1-1, x_1)
+            above_box: tuple[int] = (y+dy, x_1, x_2)
+
+            is_right_box: bool = f'{self.grid[right_box[0]][right_box[1]]}{self.grid[right_box[0]][right_box[2]]}' == '[]'
+            is_left_box: bool = f'{self.grid[left_box[0]][left_box[1]]}{self.grid[left_box[0]][left_box[2]]}' == '[]'
+            is_above_box: bool = f'{self.grid[above_box[0]][above_box[1]]}{self.grid[above_box[0]][above_box[2]]}' == '[]'
+            
+            if (is_above_box):
+                open_nodes.append(above_box)
+                continue
+
+            if (is_right_box):
+                open_nodes.append(right_box)
+
+            if (is_left_box):
+                open_nodes.append(left_box)
+
+        return closed_nodes
+    
     def move_x(self, dx: int) -> None:
         new_location: int = self.robot_x + dx
 
@@ -183,7 +217,32 @@ class WideMap(Map):
                 i += 1
     
     def move_y(self, dy: int) -> None:
-        return super().move_y(dy)
+        new_location: int = self.robot_y + dy
+
+        if (self.grid[new_location][self.robot_x] == '#'):
+            return
+        elif (self.grid[new_location][self.robot_x] == '.'):
+            self.grid[new_location][self.robot_x] = '@'
+            self.grid[self.robot_y][self.robot_x] = '.'
+            self.robot_y += dy
+        else:
+            nodes_to_update: list[tuple[int]] = []
+            if (self.grid[self.robot_y+dy][self.robot_x] == '['):
+                nodes_to_update = self.search_box_tree(dy, (self.robot_y+dy, self.robot_x, self.robot_x+1))
+            elif (self.grid[self.robot_y+dy][self.robot_x] == ']'):
+                nodes_to_update = self.search_box_tree(dy, (self.robot_y+dy, self.robot_x-1, self.robot_x))
+
+            if (len(nodes_to_update) > 0):
+                for node in nodes_to_update[::-1]:
+                    self.grid[node[0]+dy][node[1]] = '['
+                    self.grid[node[0]+dy][node[2]] = ']'
+
+                    self.grid[node[0]][node[1]] = '.'
+                    self.grid[node[0]][node[2]] = '.'
+
+                self.grid[new_location][self.robot_x] = '@'
+                self.grid[self.robot_y][self.robot_x] = '.'
+                self.robot_y += dy
 
     def calc_gps(self) -> int:
         gps_sum: int = 0
@@ -214,13 +273,16 @@ def main() -> None:
         wide_warehouse = WideMap(grid, robot_location, movements)
 
     # Part 1
-    # print(warehouse)
-    # warehouse.run_simulation()
-    # print(warehouse)
-    # print(f'GPS Sum: {warehouse.calc_gps()}')
+    print(warehouse)
+    warehouse.run_simulation()
+    print(warehouse)
+    print(f'GPS Sum: {warehouse.calc_gps()}')
 
-    print(f'\n\n{wide_warehouse}')
-    wide_warehouse.run_sim_manual()
+    # Part 2
+    print(wide_warehouse)
+    wide_warehouse.run_simulation()
+    print(wide_warehouse)
+    print(f'GPS Sum: {wide_warehouse.calc_gps()}')
 
 if __name__ == '__main__':
     main()
