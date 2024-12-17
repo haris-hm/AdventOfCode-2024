@@ -90,15 +90,6 @@ class Map():
         else:
             self.move_y(movement_coord[0])
 
-    def crate_count(self) -> int:
-        count: int = 0
-        for y, line in enumerate(self.grid):
-            for x, char in enumerate(line):
-                if (char == 'O'):
-                    count += 1
-
-        return count
-
     def calc_gps(self) -> int:
         gps_sum: int = 0
 
