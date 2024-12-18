@@ -1,4 +1,3 @@
-from collections import defaultdict
 import heapq
 from typing import Self
 from enum import Enum
@@ -26,7 +25,6 @@ class Orientation(Enum):
 
         return orientations[(orientation_to_index[orientation] + turn_direction) % 4]
         
-
 class Node():
     def __init__(self, y: int, x: int, orientation: Orientation, cost: int | float):
         self.y = y
@@ -49,8 +47,10 @@ class Node():
 class Maze():
     def __init__(self, grid: str) -> None:
         self.grid = [[char for char in line] for line in grid.split('\n')]
+        self.optimal_paths_grid: list[list[str]] = None
         self.starting_node: Node = None
         self.ending_nodes: list[Node] = []
+        self.valid_ending_nodes: list[Node] = []
 
         for y, line in enumerate(self.grid):
             for x, char in enumerate(line):
@@ -75,7 +75,7 @@ class Maze():
             return True
         return False
 
-    def dijkstra(self) -> int:
+    def dijkstra(self, previous_nodes: dict[Node, list[Node]]={}) -> int:
         touch: heapq[Node] = []
         heapq.heappush(touch, self.starting_node)
 
@@ -92,10 +92,56 @@ class Maze():
                     distances[next_node] = next_node.cost
                     heapq.heappush(touch, next_node)
 
-        ending_variations: list[Node] = [node for node in self.ending_nodes if node in distances]
+                    previous_nodes[next_node] = [curr_node]
+                elif (next_node.cost == distances[next_node]):
+                    previous_nodes[next_node].append(curr_node)
+
+        ending_variations: list[Node] = [Node(node.y, node.x, node.orientation, distances[node]) for node in self.ending_nodes if node in distances]
         min_distance: int = min([distances[node] for node in ending_variations])
+        self.valid_ending_nodes = [node for node in ending_variations if node.cost == min_distance]
 
         return min_distance
+    
+    def optimal_seat_count(self) -> int:
+        paths: dict[Node, list[Node]] = {}
+        self.dijkstra(previous_nodes=paths)
+        
+        open = [paths[self.valid_ending_nodes[0]]]
+        closed: set[Node] = {self.valid_ending_nodes[0]}
+        while open:
+            nodes = open.pop(0)
+
+            for node in nodes:
+                if node in paths and node not in closed:
+                    open.append(paths[node])
+                closed.add(node)
+
+        self.optimal_paths_grid: list[list[str]] = self.generate_optimal_paths(closed)
+        seats: int = 0
+        seen_nodes: set[tuple[int]] = set()
+
+        for node in closed:
+            y, x = node.y, node.x
+            if (y, x) not in seen_nodes:
+                seats += 1
+                seen_nodes.add((y, x))
+        
+        return seats
+    
+    def generate_optimal_paths(self, nodes: set[Node]) -> list[list[str]]:
+        grid: list[list[str]] = []
+        for y, line in enumerate(self.grid):
+            grid.append(line.copy())
+
+        for node in nodes:
+            y: int = node.y
+            x: int = node.x
+            grid[y][x] = 'O'
+
+        return grid
+    
+    def show_optimal_paths(self) -> str:
+        return '\n'.join([''.join(line) for line in self.optimal_paths_grid]) if self.optimal_paths_grid != None else ''
 
     def __repr__(self) -> str:
         grid_lines: list[str] = [''.join(line) for line in self.grid]
@@ -110,8 +156,9 @@ def main() -> None:
         contents: str = file.read()
         maze = Maze(contents)
 
-    print(maze)
-    print(f'The minimum cost path is: {maze.dijkstra()}')
+    print(f'The minimum cost path is: {maze.dijkstra()}.')
+    print(f'There are {maze.optimal_seat_count()} optimal seat(s).')
+    print(maze.show_optimal_paths())
 
 if __name__ == '__main__':
     main()
