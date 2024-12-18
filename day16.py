@@ -79,7 +79,7 @@ class Maze():
         touch: heapq[Node] = []
         heapq.heappush(touch, self.starting_node)
 
-        distances: dict[Node| int] = {self.starting_node: 0}
+        distances: dict[Node, int] = {self.starting_node: 0}
 
         while touch:
             curr_node: Node = touch.pop(0)
@@ -151,14 +151,18 @@ class Maze():
         return f'Graph:\n   Starting Node: {self.starting_node}\n   Ending Nodes: {self.ending_nodes}\n   Grid:\n{grid}'
         
 def main() -> None:
+    file_name: str = '1'
     maze: Maze = None
-    with open('./inputs/day16/1.txt', 'r') as file:
+    with open(f'./inputs/day16/{file_name}.txt', 'r') as file:
         contents: str = file.read()
         maze = Maze(contents)
 
     print(f'The minimum cost path is: {maze.dijkstra()}.')
     print(f'There are {maze.optimal_seat_count()} optimal seat(s).')
-    print(maze.show_optimal_paths())
+    
+    with open(f'./outputs/day16/{file_name}.txt', 'w') as file:
+        file.write(maze.show_optimal_paths())
+        file.close()
 
 if __name__ == '__main__':
     main()
