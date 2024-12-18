@@ -95,6 +95,13 @@ class ByteMaze():
 
         return self.ending_node
     
+    def blocked_exit_simulation(self) -> str:
+        for i in range(self.byte_amount, len(self.byte_coords)):
+            new_maze: Self = self.copy(i)
+            ending_node: Node = new_maze.a_star()
+            if (ending_node.cost == float('inf')):
+                return self.byte_coords[i-1]
+    
     def show_optimal_path(self) -> str:
         new_grid: list[list[str]] = []
 
@@ -117,6 +124,11 @@ class ByteMaze():
         grid += '\n'.join(grid_lines)
         return grid
     
+    def copy(self, byte_amount: int=-1) -> Self:
+        if byte_amount == -1:
+            return ByteMaze(self.dimensions, self.byte_coords, self.byte_amount)
+        return ByteMaze(self.dimensions, self.byte_coords, byte_amount)
+    
     def __repr__(self) -> str:
         return f'Grid:\n{self.grid_repr(self.grid)}'
 
@@ -129,9 +141,8 @@ def main() -> None:
         # maze = ByteMaze(6, contents, 12)
         maze = ByteMaze(70, contents, 1024)
 
-    print(maze)
-
     print(maze.show_optimal_path())
+    print(f'Blocked exit with byte: {maze.blocked_exit_simulation()}')
     
 if __name__ == '__main__':
     main()
