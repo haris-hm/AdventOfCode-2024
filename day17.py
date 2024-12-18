@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Self
 import re
 
 class Instruction():
@@ -83,15 +84,21 @@ class Instruction():
         return f'({self.opcode}, {self.operand})'
    
 class Computer():
-    def __init__(self) -> None:
-        self.reg_a: int = None
-        self.reg_b: int = None
-        self.reg_c: int = None
+    def __init__(self, a: int=0, b: int=0, c: int=0) -> None:
+        self.reg_a: int = a
+        self.reg_b: int = b
+        self.reg_c: int = c
 
+        self.raw_program: list[int] = []
         self.program: list[Instruction] = []
         self.instruction_pointer: int = 0
 
         self.outputs: list[int] = []
+
+    def set_program(self, raw_program: list[int]) -> None:
+        self.raw_program = raw_program
+        for i in range(0, len(self.raw_program), 2):
+            self.program.append(Instruction(int(self.raw_program[i]), int(self.raw_program[i+1])))
 
     def set_register(self, register: str, val: int) -> None:
         match register:
@@ -118,9 +125,41 @@ class Computer():
 
         return self.outputs
 
+    def copy(self) -> Self:
+        new_computer: Computer = Computer(self.reg_a, self.reg_b, self.reg_c)
+        new_computer.set_program(self.raw_program)
+        return new_computer
+
     def __repr__(self) -> str:
         output: str = ','.join([str(i) for i in self.outputs])
-        return f'Register A: {self.reg_a}\nRegister B: {self.reg_b}\nRegister C: {self.reg_c}\n\nProgram: {self.program}\n\nOutputs: {output}'
+        return f'Register A: {self.reg_a}\nRegister B: {self.reg_b}\nRegister C: {self.reg_c}\n\nProgram: {self.program}\n\nOutputs: [{output}]'
+    
+def promising(value: int, curr_instruction: int, computer: Computer) -> bool:
+    other_computer: Computer = computer.copy()
+    other_computer.set_register('A', value)
+    other_outputs: list[int] = other_computer.run_program()
+    # print(other_outputs,computer.raw_program[curr_instruction:],value)
+
+    if other_outputs == computer.raw_program[curr_instruction:]:
+        return True
+    else:
+        return False
+
+def a_register_value(computer: Computer, value: int=0, curr_instruction: int=-1) -> int:
+    for i in range(8):
+        new_value: int = value*8+i
+        if (promising(new_value, curr_instruction, computer)):
+            if (abs(curr_instruction) == len(computer.raw_program)):
+                return new_value
+            
+            branch: int = a_register_value(computer, new_value, curr_instruction-1)
+
+            if branch == -1:
+                continue
+            else: 
+                return branch
+        
+    return -1
 
 def main() -> None:
     computer: Computer = Computer()
@@ -131,12 +170,33 @@ def main() -> None:
         computer.set_register('B', int(re.findall(r'\d+', contents[1])[0]))
         computer.set_register('C', int(re.findall(r'\d+', contents[2])[0]))
 
-        for instruction in re.findall(r'\d,\d', contents[4]):
-            computer.program.append(Instruction(int(instruction[0]), int(instruction[2])))
-        
-    print(f'Before running:\n{computer}')
+        raw_program : list[int] = []
+
+        for instruction in re.findall(r'\d', contents[4]):
+            raw_program.append(int(instruction))
+
+        computer.set_program(raw_program)
+
+    p2_computer: Computer = computer.copy()
+
+    print(f'Initial State:\n{computer}')
     computer.run_program()
-    print(f'\n\nAfter running:\n{computer}')
+    print(f'\nFinal State:\n{computer}')
+
+    print('-'*70)
+
+    solution: int = a_register_value(p2_computer)
+    print(f'\nLowest A register value: {solution}')
+
+    print('-'*70)
+    print('Validation:')
+
+    validation_computer: Computer = Computer(a=solution)
+    validation_computer.set_program(computer.raw_program)
+    print(f'\nInitial State:\n{validation_computer}')
+    validation_computer.run_program()
+    print(f'\nFinal State:\n{validation_computer}')
+
 
 if __name__ == '__main__':
     main()
