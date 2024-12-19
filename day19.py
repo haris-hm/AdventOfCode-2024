@@ -31,16 +31,15 @@ def validate_designs(designs: list[str], patterns: list[str]) -> tuple[int]:
 def main() -> None:
     patterns: list[str] = []
     designs: list[str] = []
-    pattern_lengths: set[int] = set()
 
     with open('./inputs/day19/0.txt', 'r') as file:
         contents: list[str] = file.readlines()
         patterns = [i.rstrip() for i in contents[0].split(', ')]
         designs = [i.rstrip() for i in contents[2:]]
 
-    possibilites, all_possibilities = validate_designs(designs, patterns)
+    possibilities, all_possibilities = validate_designs(designs, patterns)
     
-    print(f'Possibilities: {possibilites}\nAll Possibilities: {all_possibilities}')
+    print(f'Possibilities: {possibilities}\nAll Possibilities: {all_possibilities}')
 
 if __name__ == '__main__':
     main()
