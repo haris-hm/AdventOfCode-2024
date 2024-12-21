@@ -64,13 +64,15 @@ class Path():
         return return_str
 
 class RaceTrack():
-    def __init__(self, grid: list[str]) -> None:
+    def __init__(self, grid: list[str], threshold: int=0) -> None:
         self.grid = [[char for char in line.rstrip()] for line in grid]
 
         self.starting_node: Node = None
         self.ending_node: Node = None
 
         self.optimal_path: Path = Path()
+
+        self.threshold = threshold
 
         for y, line in enumerate(self.grid):
             for x, char in enumerate(line):
@@ -138,14 +140,59 @@ class RaceTrack():
 
     def cheating_paths(self) -> int:
         count: int = 0
+        savings: list[int] = []
+
+        self.find_initial_path()
+
         for node in self.optimal_path.get_path().keys():
             cheated_nodes: list[Node] = self.get_cheating_neighbors(node)
             cheated_nodes = [new_node for new_node in cheated_nodes if new_node.cost < self.optimal_path.parent_costs[new_node]]
-            print(cheated_nodes)
+            
+            savings.extend([self.optimal_path.parent_costs[new_node] - new_node.cost for new_node in cheated_nodes])
 
             count += len(cheated_nodes)
 
-        print(count)
+        savings.sort()
+        savings = [cheat for cheat in savings if cheat >= self.threshold]
+
+        return len(savings)
+    
+    def upgraded_cheating_neighbors(self, node: Node) -> list[Node]:
+        neighbors: list[Node] = []
+
+        for dy in range(-20, 21):
+            for dx in range(21-abs(dy)):
+                y_prime: int = node.y+dy
+                x_prime_1: int = node.x+dx
+                x_prime_2: int = node.x-dx
+
+                if (self.valid_grid_pos(y_prime, x_prime_1)):
+                    neighbors.append(Node(y_prime, x_prime_1, None, node.cost+abs(dx)+abs(dy)))
+
+                if (self.valid_grid_pos(y_prime, x_prime_2)):
+                    neighbors.append(Node(y_prime, x_prime_2, None, node.cost+abs(dx)+abs(dy)))
+        
+        return neighbors
+    
+    def upgraded_cheats(self) -> int:
+        count: int = 0
+        savings: list[int] = []
+
+        self.find_initial_path()
+
+        for node in self.optimal_path.get_path().keys():
+            cheated_nodes: list[Node] = list(set(self.upgraded_cheating_neighbors(node)))
+            cheated_nodes = [new_node for new_node in cheated_nodes if new_node.cost < self.optimal_path.parent_costs[new_node]]
+            
+            savings.extend([self.optimal_path.parent_costs[new_node] - new_node.cost for new_node in cheated_nodes])
+
+            count += len(cheated_nodes)
+
+        savings.sort()
+        savings = [cheat for cheat in savings if cheat >= self.threshold]
+        # print(savings)
+
+        return len(savings)
     
     def show_optimal_path(self) -> str:
         new_grid: list[list[str]] = []
@@ -174,13 +221,14 @@ class RaceTrack():
 
 def main() -> None:
     racetrack: RaceTrack = None
-    with open('./inputs/day20/1.txt', 'r') as file:
+    with open('./inputs/day20/0.txt', 'r') as file:
         contents: list[str] = file.readlines()
-        racetrack = RaceTrack(contents)
+        racetrack = RaceTrack(contents, 100)
 
     # print(racetrack)
 
-    print(racetrack.show_optimal_path())
-    racetrack.cheating_paths()
+    # print(racetrack.show_optimal_path())
+    print(f'Number of cheats which save at least {racetrack.threshold} picoseconds: {racetrack.cheating_paths()}')
+    print(racetrack.upgraded_cheats())
 if __name__ == '__main__':
     main()
