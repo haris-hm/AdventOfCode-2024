@@ -190,7 +190,6 @@ class RaceTrack():
 
         savings.sort()
         savings = [cheat for cheat in savings if cheat >= self.threshold]
-        # print(savings)
 
         return len(savings)
     
@@ -225,10 +224,8 @@ def main() -> None:
         contents: list[str] = file.readlines()
         racetrack = RaceTrack(contents, 100)
 
-    # print(racetrack)
-
-    # print(racetrack.show_optimal_path())
     print(f'Number of cheats which save at least {racetrack.threshold} picoseconds: {racetrack.cheating_paths()}')
-    print(racetrack.upgraded_cheats())
+    print(f'Number of 20 picosecond cheats which save at least {racetrack.threshold} picoseconds: {racetrack.upgraded_cheats()}')
+
 if __name__ == '__main__':
     main()
