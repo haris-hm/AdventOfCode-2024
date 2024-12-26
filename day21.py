@@ -1,11 +1,14 @@
 class Keypad():
     def __init__(self, type: str, target_code: str='') -> None:
+        self.invalid_position: tuple[int] = None
         self.keypad = self.get_keypad(type)
         self.target_code = target_code
 
     def get_keypad(self, type: str) -> dict[str, tuple[int]]:
         match type:
             case 'NUMERIC': 
+                self.invalid_position = (3,0)
+                print(self.invalid_position)
                 return {
                     '7': (0,0),
                     '8': (0,1),
@@ -20,6 +23,7 @@ class Keypad():
                     'A': (3,2)
                 }
             case 'DIRECTIONAL':
+                self.invalid_position = (0,0)
                 return {
                     '^': (0,1),
                     'A': (0,2),
@@ -27,81 +31,75 @@ class Keypad():
                     'v': (1,1),
                     '>': (1,2)
                 }
+            
+    def get_vertical(self, new_y: int) -> str:
+        return ('^' * abs(new_y)) if new_y < 0 else ('v' * new_y)
 
-    def find_optimal_path(self, start: str, end: str, prefer_vertical: bool) -> str:
+    def find_optimal_path(self, start: str, end: str) -> list[str]:
         y_1, x_1 = self.keypad[start]
         y_2, x_2 = self.keypad[end]
 
         new_y, new_x = ((y_2-y_1), (x_2-x_1))
-        output: str = ''
+        outputs: list[str] = []
 
-        if prefer_vertical:
-            if new_y < 0:
-                output += '^' * abs(new_y)
-            else:
-                output += 'v' * new_y
+        if new_x < 0:
+            outputs.append(self.get_vertical(new_y) + '<' * abs(new_x))
 
-            if new_x < 0:
-                output += '<' * abs(new_x)
-            else:
-                output += '>' * new_x
+            if (y_1, x_1 + new_x) != self.invalid_position:
+                outputs.append('<' * abs(new_x) + self.get_vertical(new_y))
         else:
-            if new_x < 0:
-                output += '<' * abs(new_x)
-            else:
-                output += '>' * new_x
+            outputs.append('>' * abs(new_x) + self.get_vertical(new_y))
 
-            if new_y < 0:
-                output += '^' * abs(new_y)
-            else:
-                output += 'v' * new_y
+            if (y_1 + new_y, x_1) != self.invalid_position:
+                outputs.append(self.get_vertical(new_y) + '>' * abs(new_x))
 
-        output += 'A'
-        return output
+        outputs = [i + 'A' for i in outputs]
+        if len(outputs) > 1:
+            outputs = [outputs[0]] if outputs[0] == outputs[1] else outputs
+        return outputs
     
-    def find_optimal_sequence(self, prefer_vertical: bool) -> str:
-        output: str = ''
-        previous_char: str = ''
+    def find_optimal_sequence(self) -> str:
+        outputs: list[str] = ['']
+        previous_char: str = 'A'
 
-        for i, char in enumerate(self.target_code):
-            if i == 0:
-                previous_char = 'A'
+        for char in self.target_code:
+            solutions: list[str] = self.find_optimal_path(previous_char, char)            
+            new_outputs: list[str] = []
 
-            output += self.find_optimal_path(previous_char, char, prefer_vertical)            
+            for output in outputs:
+                for solution in solutions:
+                    sequence: str = output + solution
+                    new_outputs.append(sequence)
+
+            outputs = new_outputs
             previous_char = char
 
-        return output
+        outputs = sorted(outputs, key=lambda x: len(x))
+        return outputs
     
-def optimal_sequence(init: str, iterations: int) -> str:
-    numeric_keypad: Keypad = Keypad('NUMERIC')
-    directional_keypad: Keypad = Keypad('DIRECTIONAL')
-    numeric_keypad.target_code = init
-    
-    open_sequences: list[str] = [
-        numeric_keypad.find_optimal_sequence(True),
-        numeric_keypad.find_optimal_sequence(False)
-    ]
-    new_sequences: list[str] = []
+    def solve(self, iterations: int=2) -> str:
+        previous_codes: list[str] = self.find_optimal_sequence()
+        self.keypad = self.get_keypad('DIRECTIONAL')
+        print(previous_codes)
 
-    for _ in range(iterations):
-        for sequence in open_sequences:
-            directional_keypad.target_code = sequence
+        for _ in range(iterations):
+            new_codes: list[str] = []
 
-            new_sequences.append(directional_keypad.find_optimal_sequence(True))
-            new_sequences.append(directional_keypad.find_optimal_sequence(False))
+            for code in previous_codes:
+                self.target_code = code
+                new_codes.extend(self.find_optimal_sequence())
 
-        open_sequences = new_sequences
-        new_sequences = []
+            previous_codes = new_codes
 
-    open_sequences = sorted(open_sequences, key=lambda x: len(x))
-    print([len(sequence) for sequence in open_sequences])
-    return open_sequences[0]
+        previous_codes = sorted(previous_codes, key=lambda x: len(x))
+        return previous_codes[0]
     
 def code_solver(codes: list[str]) -> int:
     len_sum: int = 0
     
     for code in codes:
-        sequence: str = optimal_sequence(code, 2)
+        keypad: Keypad = Keypad('NUMERIC', code)
+        sequence: str = keypad.solve()
         
         print(f'{code}: {sequence}')
         print(f'{len(sequence)} * {int(code[:3])}')
