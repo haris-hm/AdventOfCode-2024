@@ -8,7 +8,6 @@ class Keypad():
         match type:
             case 'NUMERIC': 
                 self.invalid_position = (3,0)
-                print(self.invalid_position)
                 return {
                     '7': (0,0),
                     '8': (0,1),
@@ -58,6 +57,7 @@ class Keypad():
             outputs = [outputs[0]] if outputs[0] == outputs[1] else outputs
         return outputs
     
+
     def find_optimal_sequence(self) -> str:
         outputs: list[str] = ['']
         previous_char: str = 'A'
@@ -80,7 +80,6 @@ class Keypad():
     def solve(self, iterations: int=2) -> str:
         previous_codes: list[str] = self.find_optimal_sequence()
         self.keypad = self.get_keypad('DIRECTIONAL')
-        print(previous_codes)
 
         for _ in range(iterations):
             new_codes: list[str] = []
@@ -99,7 +98,7 @@ def code_solver(codes: list[str]) -> int:
     
     for code in codes:
         keypad: Keypad = Keypad('NUMERIC', code)
-        sequence: str = keypad.solve()
+        sequence: str = keypad.solve(25)
         
         print(f'{code}: {sequence}')
         print(f'{len(sequence)} * {int(code[:3])}')
@@ -109,7 +108,7 @@ def code_solver(codes: list[str]) -> int:
 
 
 def main() -> None:
-    with open('./inputs/day21/0.txt', 'r') as file:
+    with open('./inputs/day21/1.txt', 'r') as file:
         contents: list[str] = file.readlines()
         contents = [code.rstrip() for code in contents]
         print(code_solver(contents))
